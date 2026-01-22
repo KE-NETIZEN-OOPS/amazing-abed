@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import ModelStatsModal from './ModelStatsModal';
 import ModelSelector from './ModelSelector';
-import CustomerSection from './CustomerSection';
-import SpendingRecordSection from './SpendingRecordSection';
 import CalendarSection from './CalendarSection';
-import WorkQueueSection from './WorkQueueSection';
-import EarningsDisplay from './EarningsDisplay';
 
 export default function ChatterDashboard() {
   const navigate = useNavigate();
@@ -72,24 +68,11 @@ export default function ChatterDashboard() {
         {/* Model Selection */}
         <ModelSelector />
         
-        {/* Show model dashboard when model is selected */}
+        {/* Show model calendar when model is selected (view only) */}
         {selectedModelId && (
-          <>
-            <EarningsDisplay modelId={selectedModelId} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <CustomerSection modelId={selectedModelId} />
-              <SpendingRecordSection modelId={selectedModelId} />
-            </div>
-
-            <div className="mb-6">
-              <CalendarSection modelId={selectedModelId} />
-            </div>
-
-            <div className="mb-6">
-              <WorkQueueSection modelId={selectedModelId} />
-            </div>
-          </>
+          <div className="mb-6">
+            <CalendarSection modelId={selectedModelId} />
+          </div>
         )}
 
         {/* Original booking view */}

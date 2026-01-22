@@ -3,6 +3,11 @@ import { useStore } from '../store/store';
 import ModelStats from './ModelStats';
 import ModelCalendarEditor from './ModelCalendarEditor';
 import CustomerRequests from './CustomerRequests';
+import CustomerSection from './CustomerSection';
+import SpendingRecordSection from './SpendingRecordSection';
+import CalendarSection from './CalendarSection';
+import WorkQueueSection from './WorkQueueSection';
+import EarningsDisplay from './EarningsDisplay';
 
 export default function ModelDashboard() {
   const navigate = useNavigate();
@@ -67,12 +72,33 @@ export default function ModelDashboard() {
           <ModelStats modelId={currentModel.id} />
         </div>
 
+        {/* Earnings Display */}
+        <div className="mb-6">
+          <EarningsDisplay modelId={currentModel.id} />
+        </div>
+
         {/* Customer Requests */}
         <div className="mb-6">
           <CustomerRequests modelId={currentModel.id} />
         </div>
 
-        {/* Calendar Editor */}
+        {/* Customer Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <CustomerSection modelId={currentModel.id} />
+          <SpendingRecordSection modelId={currentModel.id} />
+        </div>
+
+        {/* Calendar Section */}
+        <div className="mb-6">
+          <CalendarSection modelId={currentModel.id} />
+        </div>
+
+        {/* Work Queue */}
+        <div className="mb-6">
+          <WorkQueueSection modelId={currentModel.id} />
+        </div>
+
+        {/* Calendar Availability Editor */}
         <div>
           <ModelCalendarEditor modelId={currentModel.id} />
         </div>
