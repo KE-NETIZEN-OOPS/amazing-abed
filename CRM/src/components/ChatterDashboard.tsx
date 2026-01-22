@@ -2,10 +2,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import ModelStatsModal from './ModelStatsModal';
+import ModelSelector from './ModelSelector';
+import CustomerSection from './CustomerSection';
+import SpendingRecordSection from './SpendingRecordSection';
+import CalendarSection from './CalendarSection';
+import WorkQueueSection from './WorkQueueSection';
+import EarningsDisplay from './EarningsDisplay';
 
 export default function ChatterDashboard() {
   const navigate = useNavigate();
   const models = useStore((state) => state.models);
+  const selectedModelId = useStore((state) => state.selectedModelId);
   const selectedDate = useStore((state) => state.selectedDate);
   const setSelectedDate = useStore((state) => state.setSelectedDate);
   const getAvailableModelsForDate = useStore((state) => state.getAvailableModelsForDate);
@@ -62,8 +69,34 @@ export default function ChatterDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Date Selection */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        {/* Model Selection */}
+        <ModelSelector />
+        
+        {/* Show model dashboard when model is selected */}
+        {selectedModelId && (
+          <>
+            <EarningsDisplay modelId={selectedModelId} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <CustomerSection modelId={selectedModelId} />
+              <SpendingRecordSection modelId={selectedModelId} />
+            </div>
+
+            <div className="mb-6">
+              <CalendarSection modelId={selectedModelId} />
+            </div>
+
+            <div className="mb-6">
+              <WorkQueueSection modelId={selectedModelId} />
+            </div>
+          </>
+        )}
+
+        {/* Original booking view */}
+        {!selectedModelId && (
+          <>
+            {/* Date Selection */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Select Date</h2>
           <div className="flex gap-4 items-end">
             <div className="flex-1">
@@ -195,6 +228,8 @@ export default function ChatterDashboard() {
             ))}
           </div>
         </div>
+          </>
+        )}
 
         {selectedModelForStats && (
           <ModelStatsModal

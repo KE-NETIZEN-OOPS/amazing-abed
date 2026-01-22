@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { User, Model, CalendarAvailability, Booking, UserRole } from '../types';
+import type { User, Model, CalendarAvailability, Booking, UserRole, Customer, SpendingRecord, CalendarEntry, WorkQueueItem } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Store {
@@ -9,11 +9,16 @@ interface Store {
   models: Model[];
   
   // Data
+  customers: Customer[];
+  spendingRecords: SpendingRecord[];
   calendarAvailabilities: CalendarAvailability[];
+  calendarEntries: CalendarEntry[];
+  workQueueItems: WorkQueueItem[];
   bookings: Booking[];
   
   // Selected date for chatter view
   selectedDate: string | null;
+  selectedModelId: string | null;
   
   // Actions
   setCurrentUser: (user: User | null) => void;
@@ -21,6 +26,30 @@ interface Store {
   createUser: (username: string, role: UserRole, avatar?: string) => User;
   createModel: (username: string) => Model;
   toggleModelOnlineStatus: (modelId: string) => void;
+  setSelectedModel: (modelId: string | null) => void;
+  
+  // Customers
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>) => Customer;
+  updateCustomer: (id: string, updates: Partial<Customer>) => void;
+  deleteCustomer: (id: string) => void;
+  
+  // Spending Records
+  addSpendingRecord: (record: Omit<SpendingRecord, 'id' | 'createdAt' | 'createdBy'>) => SpendingRecord;
+  updateSpendingRecord: (id: string, updates: Partial<SpendingRecord>) => void;
+  deleteSpendingRecord: (id: string) => void;
+  getCustomerTotal: (customerId: string) => number;
+  getModelTotalEarnings: (modelId: string) => number;
+  
+  // Calendar Entries
+  addCalendarEntry: (entry: Omit<CalendarEntry, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>) => CalendarEntry;
+  updateCalendarEntry: (id: string, updates: Partial<CalendarEntry>) => void;
+  deleteCalendarEntry: (id: string) => void;
+  moveCalendarEntry: (id: string, newStart: Date, newEnd: Date) => void;
+  
+  // Work Queue
+  addWorkQueueItem: (item: Omit<WorkQueueItem, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>) => WorkQueueItem;
+  updateWorkQueueItem: (id: string, updates: Partial<WorkQueueItem>) => void;
+  deleteWorkQueueItem: (id: string) => void;
   
   // Calendar Availability
   setAvailability: (modelId: string, date: string, isAvailable: boolean, startTime?: string, endTime?: string) => void;
@@ -78,9 +107,14 @@ export const useStore = create<Store>()((set, get) => {
     currentUser: null,
     users: [],
     models: [],
+    customers: [],
+    spendingRecords: [],
     calendarAvailabilities: [],
+    calendarEntries: [],
+    workQueueItems: [],
     bookings: [],
     selectedDate: null,
+    selectedModelId: null,
     
     setCurrentUser: (user) => {
       set({ currentUser: user });
@@ -143,6 +177,229 @@ export const useStore = create<Store>()((set, get) => {
           models: state.models.map((m) =>
             m.id === modelId ? { ...m, isOnline: !m.isOnline } : m
           ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    setSelectedModel: (modelId) => {
+      set({ selectedModelId: modelId });
+      saveState(get());
+    },
+    
+    addCustomer: (customerData) => {
+      const customer: Customer = {
+        ...customerData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: get().currentUser?.username || 'Unknown',
+        updatedBy: get().currentUser?.username || 'Unknown',
+      };
+      set((state) => {
+        const newState = { ...state, customers: [...state.customers, customer] };
+        saveState(newState);
+        return newState;
+      });
+      return customer;
+    },
+    
+    updateCustomer: (id, updates) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          customers: state.customers.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: get().currentUser?.username || 'Unknown',
+                }
+              : c
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    deleteCustomer: (id) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          customers: state.customers.filter((c) => c.id !== id),
+          spendingRecords: state.spendingRecords.filter((r) => r.customerId !== id),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    addSpendingRecord: (recordData) => {
+      const record: SpendingRecord = {
+        ...recordData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        createdBy: get().currentUser?.username || 'Unknown',
+      };
+      set((state) => {
+        const newState = { ...state, spendingRecords: [...state.spendingRecords, record] };
+        saveState(newState);
+        return newState;
+      });
+      return record;
+    },
+    
+    updateSpendingRecord: (id, updates) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          spendingRecords: state.spendingRecords.map((r) =>
+            r.id === id ? { ...r, ...updates } : r
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    deleteSpendingRecord: (id) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          spendingRecords: state.spendingRecords.filter((r) => r.id !== id),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    getCustomerTotal: (customerId) => {
+      return get().spendingRecords
+        .filter((r) => r.customerId === customerId)
+        .reduce((sum, r) => sum + r.amount, 0);
+    },
+    
+    getModelTotalEarnings: (modelId) => {
+      const modelCustomers = get().customers.filter((c) => c.modelId === modelId);
+      return modelCustomers.reduce((sum, customer) => {
+        return sum + get().getCustomerTotal(customer.id);
+      }, 0);
+    },
+    
+    addCalendarEntry: (entryData) => {
+      const entry: CalendarEntry = {
+        ...entryData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: get().currentUser?.username || 'Unknown',
+        updatedBy: get().currentUser?.username || 'Unknown',
+      };
+      set((state) => {
+        const newState = { ...state, calendarEntries: [...state.calendarEntries, entry] };
+        saveState(newState);
+        return newState;
+      });
+      return entry;
+    },
+    
+    updateCalendarEntry: (id, updates) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          calendarEntries: state.calendarEntries.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: get().currentUser?.username || 'Unknown',
+                }
+              : e
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    deleteCalendarEntry: (id) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          calendarEntries: state.calendarEntries.filter((e) => e.id !== id),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    moveCalendarEntry: (id, newStart, newEnd) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          calendarEntries: state.calendarEntries.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  start: newStart,
+                  end: newEnd,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: get().currentUser?.username || 'Unknown',
+                }
+              : e
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    addWorkQueueItem: (itemData) => {
+      const item: WorkQueueItem = {
+        ...itemData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: get().currentUser?.username || 'Unknown',
+        updatedBy: get().currentUser?.username || 'Unknown',
+      };
+      set((state) => {
+        const newState = { ...state, workQueueItems: [...state.workQueueItems, item] };
+        saveState(newState);
+        return newState;
+      });
+      return item;
+    },
+    
+    updateWorkQueueItem: (id, updates) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          workQueueItems: state.workQueueItems.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: get().currentUser?.username || 'Unknown',
+                }
+              : i
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    deleteWorkQueueItem: (id) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          workQueueItems: state.workQueueItems.filter((i) => i.id !== id),
         };
         saveState(newState);
         return newState;
