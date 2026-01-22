@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import ModelStats from './ModelStats';
 import ModelCalendarEditor from './ModelCalendarEditor';
+import CustomerRequests from './CustomerRequests';
 
 export default function ModelDashboard() {
   const navigate = useNavigate();
@@ -64,6 +65,11 @@ export default function ModelDashboard() {
         {/* Stats Section */}
         <div className="mb-6">
           <ModelStats modelId={currentModel.id} />
+        </div>
+
+        {/* Customer Requests */}
+        <div className="mb-6">
+          <CustomerRequests modelId={currentModel.id} />
         </div>
 
         {/* Calendar Editor */}

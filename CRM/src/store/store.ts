@@ -31,6 +31,7 @@ interface Store {
   createBooking: (modelId: string, chatterId: string, date: string, time: string) => Booking;
   confirmBooking: (bookingId: string) => void;
   cancelBooking: (bookingId: string) => void;
+  completeBooking: (bookingId: string) => void;
   getModelBookings: (modelId: string) => Booking[];
   getChatterBookings: (chatterId: string) => Booking[];
   
@@ -244,6 +245,19 @@ export const useStore = create<Store>()((set, get) => {
           ...state,
           bookings: state.bookings.map((b) =>
             b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    completeBooking: (bookingId) => {
+      set((state) => {
+        const newState = {
+          ...state,
+          bookings: state.bookings.map((b) =>
+            b.id === bookingId ? { ...b, status: 'completed' as const } : b
           ),
         };
         saveState(newState);
