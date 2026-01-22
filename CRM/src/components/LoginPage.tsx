@@ -5,15 +5,13 @@ import { useStore } from '../store/store';
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<'chatter' | 'model'>('chatter');
-  const [avatar, setAvatar] = useState('');
   const navigate = useNavigate();
   const createUser = useStore((state) => state.createUser);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (username.trim()) {
-      const user = createUser(username.trim(), role);
-      // Avatar can be added later via profile settings
+      createUser(username.trim(), role);
       navigate('/dashboard');
     }
   };
