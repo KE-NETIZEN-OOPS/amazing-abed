@@ -1,0 +1,13 @@
+{
+  "name": "@amazing-abed/nlp",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "natural": "^6.10.0"
+  },
+  "devDependencies": {
+    "@types/natural": "^5.1.5",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,123 +1,61 @@
-# CRM System
+# Amazing Abed - Reddit Lead Intelligence Platform
 
-A comprehensive Customer Relationship Management system designed for managing models, customers, spending records, calendars, and work queues.
+A comprehensive Reddit scraping and lead generation platform with real-time processing, NLP intent detection, and automated draft reply generation.
 
-## Features
+## Architecture
 
-### User Management
-- **Two User Roles:**
-  - **Chatter**: Can manage customers, spending records, calendars, and work queues
-  - **Model**: Same as chatter, plus has a publicly accessible calendar view
+- **Monorepo** structure with Turbo
+- **Backend**: NestJS API
+- **Frontend**: Next.js with App Router
+- **Worker**: Background job processing with BullMQ
+- **Database**: PostgreSQL with Prisma
+- **Scraping**: crawl4ai with real Reddit authentication
+- **Deployment**: Docker Compose
 
-### Model Management
-- Select and view different models
-- Online/Offline status toggle for each model
-- Public calendar view for each model (models only)
-
-### Customer Management
-- Add customers with the following fields:
-  - Name
-  - Label (Shrimp, Fish, Dolphins, Whale)
-  - Phone Number
-  - Age
-  - Preferences
-  - Interests
-  - General Notes
-- Edit and delete customers
-- Each customer has their own spending record
-
-### Spending Records
-- Track spending per customer:
-  - Amount
-  - Service
-  - Date & Time
-- Automatic total calculation per customer
-- Model total earnings display (always visible when model is selected)
-- Full audit trail (who added each record)
-
-### Calendar System
-- Unique calendar for each model
-- Navigate through dates (defaults to current date)
-- Online/Offline status display
-- Add, edit, and delete calendar entries
-- **Time Blocking**: Mark time slots as unavailable
-- **Color Coding:**
-  - Green: Not Started
-  - Yellow: In Progress
-  - Red: Done
-- **Drag & Drop**: Move calendar entries to adjust times
-- **Resize**: Adjust entry duration by dragging edges
-- Click entries to view/edit details with notes
-- Full audit trail (who created/updated each entry)
-
-### Work Queue
-- Date-bound tasks (not time-specific)
-- Add tasks for specific dates
-- Status management (Not Started, In Progress, Done)
-- Color-coded by status
-- Full audit trail
-
-### Audit Trail
-- All entries show who created them
-- Updates show who last modified them
-- Visible in:
-  - Customer records
-  - Spending records
-  - Calendar entries
-  - Work queue items
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
+- Docker & Docker Compose
+- Node.js 18+
+- SSH access to server
 
-### Installation
+### Local Development
 
-1. Install dependencies:
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Start the development server:
-```bash
+# Start all services
+npm run docker:up
+
+# Run development
 npm run dev
 ```
 
-3. Open your browser and navigate to `http://localhost:5173`
-
-### Building for Production
+### Server Deployment
 
 ```bash
-npm run build
+# SSH to server
+ssh boss-server
+
+# Navigate to directory
+cd amazing-abed
+
+# Start services
+docker-compose up -d
 ```
 
-The built files will be in the `dist` directory.
+## Features
 
-## Usage
+- ✅ Real-time Reddit scraping (last 30 minutes)
+- ✅ Multi-account support
+- ✅ NLP intent detection
+- ✅ LLM draft generation
+- ✅ Real-time frontend updates
+- ✅ Progress tracking
+- ✅ Automated scraping cycles (5min scrape, 2min break)
+- ✅ Full observability dashboard
 
-1. **Login**: Create a profile as either a "chatter" or "model"
-2. **Select Model**: Choose which model's dashboard to view
-3. **Manage Customers**: Add customers with all their details
-4. **Track Spending**: Add spending records for each customer
-5. **Schedule**: Use the calendar to manage appointments and time blocks
-6. **Work Queue**: Add date-specific tasks that need to be completed
+## Environment Variables
 
-## Technology Stack
-
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Zustand** - State management
-- **React Router** - Navigation
-- **React Big Calendar** - Calendar component
-- **Tailwind CSS** - Styling
-- **date-fns** - Date utilities
-
-## Data Persistence
-
-Data is stored in browser localStorage, so it persists across sessions. To reset all data, clear your browser's localStorage.
-
-## License
-
-MIT
+See `.env.example` in each app directory.

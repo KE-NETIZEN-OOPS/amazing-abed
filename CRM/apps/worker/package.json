@@ -1,0 +1,23 @@
+{
+  "name": "@amazing-abed/worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "@amazing-abed/nlp": "*",
+    "@amazing-abed/llm-adapter": "*",
+    "bullmq": "^5.4.0",
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "prisma": "^5.7.1",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  }
+}
