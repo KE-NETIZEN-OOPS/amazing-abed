@@ -17,7 +17,10 @@ export default function DiagnosticsPage() {
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 20000);
+    // Refresh every 5 seconds for live updates
+    const interval = setInterval(() => {
+      fetchStats().catch(err => console.error('Stats refresh error:', err));
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 

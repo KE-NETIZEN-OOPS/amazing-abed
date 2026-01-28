@@ -6,7 +6,7 @@ import Link from 'next/link'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Amazing Abed - Reddit Lead Intelligence',
+  title: 'Threadsense - Reddit Lead Intelligence',
   description: 'Reddit scraping and lead generation platform',
 }
 
@@ -22,7 +22,7 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-8 py-4">
             <div className="flex items-center justify-between">
               <Link href="/" className="text-2xl font-bold neon-cyan">
-                Amazing Abed
+                Threadsense
               </Link>
               <div className="flex gap-4">
                 <Link href="/accounts" className="text-gray-400 hover:text-cyan-400">Accounts</Link>

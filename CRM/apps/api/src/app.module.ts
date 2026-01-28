@@ -8,6 +8,8 @@ import { ScrapingModule } from './scraping/scraping.module';
 import { DraftsModule } from './drafts/drafts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SessionsModule } from './sessions/sessions.module';
+import { KeywordsModule } from './keywords/keywords.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PrismaModule } from './prisma/prisma.module';
     ScrapingModule,
     DraftsModule,
     DashboardModule,
+    SessionsModule,
+    KeywordsModule,
   ],
 })
 export class AppModule {}

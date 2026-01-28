@@ -23,10 +23,11 @@ export default function NewAccountPage() {
         body: JSON.stringify(formData),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         router.push('/accounts');
       } else {
-        alert('Failed to create account');
+        alert(`Failed to create account: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);

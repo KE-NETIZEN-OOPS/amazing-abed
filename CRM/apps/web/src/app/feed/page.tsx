@@ -33,8 +33,10 @@ export default function FeedPage() {
     };
 
     fetchContent();
-    // Refresh every 20 seconds
-    const interval = setInterval(fetchContent, 20000);
+    // Refresh every 5 seconds with smooth polling
+    const interval = setInterval(() => {
+      fetchContent().catch(err => console.error('Feed refresh error:', err));
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
