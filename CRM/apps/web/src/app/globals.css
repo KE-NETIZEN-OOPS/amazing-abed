@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth transitions for all pages */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent layout shift during polling */
+[data-polling] {
+  will-change: contents;
+}
+
 :root {
   --background: #0a0a0a;
   --foreground: #ffffff;
