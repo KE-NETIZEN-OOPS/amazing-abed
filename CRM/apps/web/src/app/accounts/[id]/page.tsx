@@ -76,7 +76,7 @@ export default function AccountDetailsPage() {
     if (!newKeyword.trim()) return;
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/keywords`, {
+      const res = await fetch(getApiUrl('/keywords'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,7 +99,7 @@ export default function AccountDetailsPage() {
 
   const handleDeleteKeyword = async (keywordId: string) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/keywords/${keywordId}`, {
+      await fetch(getApiUrl(`/keywords/${keywordId}`), {
         method: 'DELETE',
       });
       setKeywords(keywords.filter(k => k.id !== keywordId));
@@ -110,13 +110,13 @@ export default function AccountDetailsPage() {
 
   const handleStartScraping = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/start/${accountId}`, {
+      const res = await fetch(getApiUrl(`/scraping/start/${accountId}`), {
         method: 'POST',
       });
       const data = await res.json();
       if (res.ok && data.success) {
         // Refresh status
-        const statusRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/status/${accountId}`);
+        const statusRes = await fetch(getApiUrl(`/scraping/status/${accountId}`));
         const statusData = await statusRes.json();
         setScrapingStatus(statusData || { active: false });
       }
@@ -127,7 +127,7 @@ export default function AccountDetailsPage() {
 
   const handleStopScraping = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/stop/${accountId}`, {
+      await fetch(getApiUrl(`/scraping/stop/${accountId}`), {
         method: 'DELETE',
       });
       setScrapingStatus({ active: false });

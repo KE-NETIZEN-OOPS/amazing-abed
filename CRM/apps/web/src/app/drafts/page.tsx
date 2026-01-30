@@ -98,7 +98,7 @@ export default function DraftsPage() {
                       button.textContent = 'Posting...';
                       
                       try {
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drafts/${draft.id}/approve`, {
+                        const res = await fetch(getApiUrl(`/drafts/${draft.id}/approve`), {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ postToReddit: true }),
@@ -136,7 +136,7 @@ export default function DraftsPage() {
                 <button
                   onClick={async () => {
                     try {
-                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drafts/${draft.id}/reject`, {
+                      const res = await fetch(getApiUrl(`/drafts/${draft.id}/reject`), {
                         method: 'POST',
                       });
                       if (res.ok) {
