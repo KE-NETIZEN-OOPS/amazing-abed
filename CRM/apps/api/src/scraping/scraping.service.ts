@@ -18,36 +18,68 @@ export class ScrapingService {
   ) {}
 
   async startScraping(accountId: string) {
-    const account = await this.prisma.account.findUnique({
-      where: { id: accountId },
-      include: { sessions: { orderBy: { createdAt: 'desc' }, take: 1 } },
-    });
+    try {
+      const account = await this.prisma.account.findUnique({
+        where: { id: accountId },
+        include: { sessions: { orderBy: { createdAt: 'desc' }, take: 1 } },
+      });
 
-    if (!account || account.status !== 'ACTIVE') {
-      throw new Error('Account not found or inactive');
+      if (!account) {
+        throw new Error('Account not found');
+      }
+
+      if (account.status !== 'ACTIVE') {
+        throw new Error('Account is not active');
+      }
+
+      // Stop existing scrape if running
+      this.stopScraping(accountId);
+
+      // Create adapter instance
+      const adapter = new Crawl4aiRedditAdapter();
+      this.adapters.set(accountId, adapter);
+
+      // Try to use saved session first
+      if (account.sessions && account.sessions.length > 0) {
+        const session = account.sessions[0];
+        const { CookieVault } = require('@amazing-abed/auth');
+        const vault = new CookieVault();
+        try {
+          const cookies = vault.decrypt(session.cookies);
+          adapter.setCookies(cookies);
+          console.log(`✅ Using saved session for ${account.username}`);
+        } catch (e) {
+          console.log(`⚠️ Could not decrypt session, will login fresh`);
+        }
+      }
+
+      // Login if no valid session
+      if (!adapter.getCookies()) {
+        console.log(`Logging in to Reddit as ${account.username}...`);
+        const loggedIn = await adapter.login(account.username, account.password);
+        if (!loggedIn) {
+          throw new Error('Failed to login to Reddit');
+        }
+      }
+
+      // Start scraping cycle: 5 minutes scrape, 2 minutes break
+      this.runScrapingCycle(accountId, adapter);
+      
+      // Update account status
+      await this.prisma.account.update({
+        where: { id: accountId },
+        data: { lastActive: new Date() },
+      });
+    } catch (error: any) {
+      console.error('Error starting scraping:', error);
+      throw error;
     }
-
-    // Stop existing scrape if running
-    this.stopScraping(accountId);
-
-    // Create adapter instance
-    const adapter = new Crawl4aiRedditAdapter();
-    this.adapters.set(accountId, adapter);
-
-    // Login
-    const loggedIn = await adapter.login(account.username, account.password);
-    if (!loggedIn) {
-      throw new Error('Failed to login to Reddit');
-    }
-
-    // Start scraping cycle: 5 minutes scrape, 2 minutes break
-    this.runScrapingCycle(accountId, adapter);
   }
 
   private async runScrapingCycle(accountId: string, adapter: Crawl4aiRedditAdapter) {
     const startTime = Date.now();
-    const scrapeDuration = 5 * 60 * 1000; // 5 minutes
-    const breakDuration = 2 * 60 * 1000; // 2 minutes
+    const scrapeDuration = 30 * 60 * 1000; // 30 minutes
+    const breakDuration = 5 * 60 * 1000; // 5 minutes
     let postsFound = 0;
 
     const scrapeInterval = setInterval(async () => {
@@ -78,7 +110,7 @@ export class ScrapingService {
       }
 
       try {
-        // Scrape latest posts (last 30 minutes) - use 'new' sorting
+        // Scrape from specific NSFW/rating subreddits first, then 'all'
         const posts = await adapter.scrapeLatestPosts('all', 100, 'hour');
 
         for (const post of posts) {
@@ -88,6 +120,44 @@ export class ScrapingService {
           });
 
           if (!existing) {
+            // Filter by keywords - prioritize "dickrating" specifically
+            const text = `${post.title} ${post.body || ''}`.toLowerCase();
+            
+            // Primary keywords for dickrating
+            const primaryKeywords = [
+              'dickrating', 'dick rating', 'dickrate', 'rate my dick', 'rate my cock',
+              'dick rate', 'cock rating', 'penis rating', 'rate my penis'
+            ];
+            
+            // Secondary keywords
+            const secondaryKeywords = [
+              'rate me', 'rating', 'rate', 'nsfw', 'onlyfans', 'of', 'custom',
+              'dm me', 'pm me', 'kik', 'snap', 'snapchat', 'selling content'
+            ];
+            
+            const hasPrimaryKeyword = primaryKeywords.some(kw => text.includes(kw));
+            const hasSecondaryKeyword = secondaryKeywords.some(kw => text.includes(kw));
+            
+            // Relevant NSFW subreddits
+            const nsfwSubreddits = [
+              'rateme', 'amiugly', 'freecompliments', 'roastme', 'truerateme',
+              'nsfw', 'gonewild', 'realgirls', 'amihot', 'ratemyboobs', 'ratemypussy',
+              'dick', 'cock', 'penis', 'rate', 'rating', 'ratemy', 'ratemydick',
+              'onlyfans', 'nsfw411', 'nsfw_gifs', 'nsfw_videos'
+            ];
+            const subredditLower = post.subreddit.toLowerCase();
+            const isNsfwSubreddit = nsfwSubreddits.some(sub => subredditLower.includes(sub));
+            
+            // Accept if: has primary keyword OR (NSFW + has secondary keyword) OR NSFW subreddit
+            const isRelevant = hasPrimaryKeyword || (post.isNsfw && hasSecondaryKeyword) || (post.isNsfw && isNsfwSubreddit) || isNsfwSubreddit;
+
+            if (!isRelevant) {
+              continue; // Skip irrelevant posts
+            }
+            
+            const keywordType = hasPrimaryKeyword ? 'PRIMARY' : hasSecondaryKeyword ? 'SECONDARY' : 'NSFW_SUBREDDIT';
+            console.log(`✅ Found relevant post: ${post.title.substring(0, 50)}... (NSFW: ${post.isNsfw}, Keyword: ${keywordType}, Sub: r/${post.subreddit})`);
+
             // Create content record
             const content = await this.prisma.content.create({
               data: {
@@ -148,13 +218,29 @@ export class ScrapingService {
     this.adapters.delete(accountId);
   }
 
-  async getScrapingStatus(accountId: string) {
+  async getScrapingStatus(accountId: string): Promise<{
+    active: boolean;
+    postsFound?: number;
+    timeRemaining?: number;
+    status?: 'scraping' | 'break';
+    startTime?: number;
+  }> {
     const scrapeData = this.activeScrapes.get(accountId);
+    if (!scrapeData) {
+      return { active: false };
+    }
+    
+    const elapsed = Date.now() - scrapeData.startTime;
+    const scrapeDuration = 30 * 60 * 1000; // 30 minutes
+    const remaining = scrapeDuration - elapsed;
+    const isBreak = remaining <= 0;
+    
     return {
-      active: !!scrapeData,
-      accountId,
-      postsFound: scrapeData?.postsFound || 0,
-      timeRemaining: scrapeData ? (5 * 60 * 1000) - (Date.now() - scrapeData.startTime) : 0,
+      active: true,
+      postsFound: scrapeData.postsFound || 0,
+      timeRemaining: isBreak ? 5 * 60 * 1000 : Math.max(0, remaining), // 5 min break or remaining scrape time
+      status: isBreak ? 'break' : 'scraping',
+      startTime: scrapeData.startTime,
     };
   }
 }

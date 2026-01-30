@@ -12,19 +12,31 @@ export class ScrapingController {
 
   @Post('start/:accountId')
   async startScraping(@Param('accountId') accountId: string) {
-    await this.scrapingService.startScraping(accountId);
-    return { success: true, accountId };
+    try {
+      await this.scrapingService.startScraping(accountId);
+      return { success: true, accountId };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   @Delete('stop/:accountId')
   async stopScraping(@Param('accountId') accountId: string) {
-    await this.scrapingService.stopScraping(accountId);
-    return { success: true, accountId };
+    try {
+      await this.scrapingService.stopScraping(accountId);
+      return { success: true, accountId };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   @Get('status/:accountId')
   async getStatus(@Param('accountId') accountId: string) {
-    return this.scrapingService.getScrapingStatus(accountId);
+    try {
+      return this.scrapingService.getScrapingStatus(accountId);
+    } catch (error) {
+      return { active: false, error: error.message };
+    }
   }
 
   @Sse('progress/:accountId')

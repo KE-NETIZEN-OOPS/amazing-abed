@@ -16,8 +16,23 @@ export class AccountsService {
     password: string;
     type: 'SCRAPE' | 'POST' | 'BOTH';
   }) {
+    // Trim username to prevent duplicates with spaces
+    const trimmedUsername = data.username.trim();
+    
+    // Check if account already exists
+    const existing = await this.prisma.account.findUnique({
+      where: { username: trimmedUsername },
+    });
+    
+    if (existing) {
+      throw new Error(`Account with username "${trimmedUsername}" already exists`);
+    }
+    
     return this.prisma.account.create({
-      data,
+      data: {
+        ...data,
+        username: trimmedUsername,
+      },
     });
   }
 

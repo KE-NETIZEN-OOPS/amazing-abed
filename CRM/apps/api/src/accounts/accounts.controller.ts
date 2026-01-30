@@ -12,7 +12,12 @@ export class AccountsController {
 
   @Post()
   async create(@Body() data: any) {
-    return this.accountsService.create(data);
+    try {
+      const account = await this.accountsService.create(data);
+      return { success: true, account };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   @Put(':id')

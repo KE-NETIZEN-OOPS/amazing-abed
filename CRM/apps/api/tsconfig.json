@@ -18,10 +18,10 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@amazing-abed/reddit-adapter": ["../../packages/reddit-adapter/src"],
-      "@amazing-abed/llm-adapter": ["../../packages/llm-adapter/src"],
-      "@amazing-abed/nlp": ["../../packages/nlp/src"],
-      "@amazing-abed/auth": ["../../packages/auth/src"]
+      "@amazing-abed/reddit-adapter": ["../../packages/reddit-adapter/dist"],
+      "@amazing-abed/llm-adapter": ["../../packages/llm-adapter/dist"],
+      "@amazing-abed/nlp": ["../../packages/nlp/dist"],
+      "@amazing-abed/auth": ["../../packages/auth/dist"]
     }
   }
 }

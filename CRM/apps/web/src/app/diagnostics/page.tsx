@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getApiUrl } from '@/lib/api';
 
 export default function DiagnosticsPage() {
   const [stats, setStats] = useState<any>(null);
@@ -8,7 +9,7 @@ export default function DiagnosticsPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`);
+        const res = await fetch(getApiUrl('/dashboard/stats'));
         const data = await res.json();
         setStats(data);
       } catch (error) {

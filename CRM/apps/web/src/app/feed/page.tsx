@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getApiUrl } from '@/lib/api';
 
 interface Content {
   id: string;
@@ -22,7 +23,7 @@ export default function FeedPage() {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/content`);
+        const res = await fetch(getApiUrl('/content'));
         const data = await res.json();
         setContent(data);
       } catch (error) {

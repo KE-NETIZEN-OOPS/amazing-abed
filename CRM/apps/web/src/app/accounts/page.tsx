@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/api';
 
 interface Account {
   id: string;
@@ -18,7 +19,7 @@ export default function AccountsPage() {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`);
+        const res = await fetch(getApiUrl('/accounts'));
         const data = await res.json();
         setAccounts(data);
       } catch (error) {
@@ -35,7 +36,7 @@ export default function AccountsPage() {
 
   const handleStartScraping = async (accountId: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/start/${accountId}`, {
+      const res = await fetch(getApiUrl(`/scraping/start/${accountId}`), {
         method: 'POST',
       });
       const data = await res.json();
@@ -47,7 +48,7 @@ export default function AccountsPage() {
       }
       
       // Refresh accounts
-      const res2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`);
+      const res2 = await fetch(getApiUrl('/accounts'));
       const data2 = await res2.json();
       setAccounts(data2);
     } catch (error: any) {
@@ -58,10 +59,10 @@ export default function AccountsPage() {
 
   const handleStopScraping = async (accountId: string) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/stop/${accountId}`, {
+      await fetch(getApiUrl(`/scraping/stop/${accountId}`), {
         method: 'DELETE',
       });
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`);
+      const res = await fetch(getApiUrl('/accounts'));
       const data = await res.json();
       setAccounts(data);
     } catch (error) {

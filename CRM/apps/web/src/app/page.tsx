@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/api';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -15,7 +16,7 @@ export default function Home() {
     // Refresh every 20 seconds
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`);
+        const res = await fetch(getApiUrl('/dashboard/stats'));
         const data = await res.json();
         setStats(data);
       } catch (error) {

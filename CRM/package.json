@@ -18,5 +18,8 @@
   "devDependencies": {
     "turbo": "^1.11.2",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.13.4"
   }
 }

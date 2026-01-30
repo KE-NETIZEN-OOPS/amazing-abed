@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getApiUrl } from '@/lib/api';
 
 export default function NewAccountPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function NewAccountPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`, {
+      const res = await fetch(getApiUrl('/accounts'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/api';
 
 interface Account {
   id: string;
@@ -41,9 +42,9 @@ export default function AccountDetailsPage() {
     const fetchData = async () => {
       try {
         const [accountRes, keywordsRes, statusRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`).then(r => r.json()),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/keywords/account/${accountId}`).then(r => r.json()),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/status/${accountId}`).then(r => r.json()),
+          fetch(getApiUrl('/accounts')).then(r => r.json()),
+          fetch(getApiUrl(`/keywords/account/${accountId}`)).then(r => r.json()),
+          fetch(getApiUrl(`/scraping/status/${accountId}`)).then(r => r.json()),
         ]);
         
         const foundAccount = accountRes.find((a: Account) => a.id === accountId);
@@ -62,7 +63,7 @@ export default function AccountDetailsPage() {
     fetchData();
     // Refresh status every 2 seconds for real-time updates
     const interval = setInterval(() => {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/scraping/status/${accountId}`)
+      fetch(getApiUrl(`/scraping/status/${accountId}`))
         .then(r => r.json())
         .then(data => setScrapingStatus(data || { active: false }))
         .catch(err => console.error('Status refresh error:', err));

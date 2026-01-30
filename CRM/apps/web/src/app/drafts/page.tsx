@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getApiUrl } from '@/lib/api';
 
 interface Draft {
   id: string;
@@ -22,7 +23,7 @@ export default function DraftsPage() {
   useEffect(() => {
     const fetchDrafts = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drafts`);
+        const res = await fetch(getApiUrl('/drafts'));
         const data = await res.json();
         setDrafts(data);
       } catch (error) {

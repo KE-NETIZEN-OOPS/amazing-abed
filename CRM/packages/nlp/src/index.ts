@@ -45,23 +45,33 @@ export class IntentDetector {
       };
     }
 
-    // Check for requesting
-    const requestingScore = this.requestingPhrases.reduce((score, phrase) => {
+    // Check for requesting - expanded phrases
+    const requestingPhrases = [
+      ...this.requestingPhrases,
+      'rate me', 'rate my', 'what do you think', 'how do i look',
+      'am i', 'should i', 'can you', 'help me', 'need', 'want',
+      'opinion', 'thoughts', 'feedback', 'advice', 'suggestions'
+    ];
+    
+    const requestingScore = requestingPhrases.reduce((score, phrase) => {
       return score + (text.includes(phrase) ? 1 : 0);
     }, 0);
 
-    if (requestingScore > 0) {
+    // Also check for question marks (often indicates requesting)
+    const hasQuestion = text.includes('?');
+
+    if (requestingScore > 0 || hasQuestion) {
       return {
         type: 'REQUESTING_SERVICE',
-        score: requestingScore,
-        confidence: Math.min(requestingScore / 2, 1.0),
+        score: requestingScore + (hasQuestion ? 1 : 0),
+        confidence: Math.min((requestingScore + (hasQuestion ? 1 : 0)) / 3, 1.0),
       };
     }
 
     return {
       type: 'IRRELEVANT',
       score: 0,
-      confidence: 0.5,
+      confidence: 0.3,
     };
   }
 
