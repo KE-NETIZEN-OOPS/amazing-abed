@@ -109,7 +109,7 @@ export default function DraftsPage() {
                         if (res.ok && data.success) {
                           alert('✅ Draft approved and posted to Reddit!');
                           // Refresh drafts
-                          const res2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drafts`);
+                          const res2 = await fetch(`getApiUrl('/drafts')`);
                           const data2 = await res2.json();
                           setDrafts(data2);
                         } else {
@@ -141,7 +141,7 @@ export default function DraftsPage() {
                       });
                       if (res.ok) {
                         alert('Draft rejected');
-                        const res2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drafts`);
+                        const res2 = await fetch(`getApiUrl('/drafts')`);
                         const data2 = await res2.json();
                         setDrafts(data2);
                       }
