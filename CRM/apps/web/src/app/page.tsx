@@ -25,7 +25,7 @@ export default function Home() {
     }, 20000);
 
     // Initial fetch
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`)
+    fetch(getApiUrl('/dashboard/stats'))
       .then(res => res.json())
       .then(setStats)
       .catch(console.error);
