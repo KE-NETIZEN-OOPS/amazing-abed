@@ -6,7 +6,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY turbo.json ./
 COPY apps/worker/package*.json ./apps/worker/
-COPY packages/*/package*.json ./packages/*/
+COPY packages/auth/package*.json ./packages/auth/
+COPY packages/reddit-adapter/package*.json ./packages/reddit-adapter/
+COPY packages/llm-adapter/package*.json ./packages/llm-adapter/
+COPY packages/nlp/package*.json ./packages/nlp/
 
 # Install dependencies
 RUN npm install
