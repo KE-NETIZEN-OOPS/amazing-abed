@@ -21,6 +21,13 @@ COPY . .
 WORKDIR /app/infra/prisma
 RUN npx prisma generate
 
+# Build shared internal packages required by the worker.
+WORKDIR /app/packages/nlp
+RUN npm run build
+
+WORKDIR /app/packages/llm-adapter
+RUN npm run build
+
 # Build worker
 WORKDIR /app/apps/worker
 RUN npm run build
