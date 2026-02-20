@@ -6,11 +6,33 @@ import { SessionsService } from '../sessions/sessions.service';
 @Injectable()
 export class DraftsService {
   private adapters: Map<string, Crawl4aiRedditAdapter> = new Map();
+  private accountLocks: Map<string, Promise<void>> = new Map();
 
   constructor(
     private prisma: PrismaService,
     private sessionsService: SessionsService,
   ) {}
+
+  private async withAccountLock<T>(accountId: string, fn: () => Promise<T>): Promise<T> {
+    const previous = this.accountLocks.get(accountId) || Promise.resolve();
+    let releaseLock: () => void = () => undefined;
+    const current = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    const chained = previous.then(() => current);
+
+    this.accountLocks.set(accountId, chained);
+
+    await previous;
+    try {
+      return await fn();
+    } finally {
+      releaseLock();
+      if (this.accountLocks.get(accountId) === chained) {
+        this.accountLocks.delete(accountId);
+      }
+    }
+  }
 
   async findAll() {
     return this.prisma.draft.findMany({
@@ -48,17 +70,18 @@ export class DraftsService {
         throw new Error(`Account credentials missing for account ${draft.accountId}`);
       }
 
-      // Update draft as approved (but keep status as PENDING until post succeeds)
-      await this.prisma.draft.update({
-        where: { id: draftId },
-        data: { approved: true },
-        // Don't change status here - it will be updated after successful post
-      });
+      return this.withAccountLock(draft.accountId, async () => {
+        // Update draft as approved (but keep status as PENDING until post succeeds)
+        await this.prisma.draft.update({
+          where: { id: draftId },
+          data: { approved: true },
+          // Don't change status here - it will be updated after successful post
+        });
 
-      let postResult = null;
+        let postResult = null;
 
-      if (postToReddit) {
-        try {
+        if (postToReddit) {
+          try {
           // Get or create adapter for this account
           let adapter = this.adapters.get(draft.accountId);
           if (!adapter) {
@@ -195,9 +218,9 @@ export class DraftsService {
             const errorMsg = 'Failed to post to Reddit - adapter returned false. This might be due to rate limiting (429 error). Please wait a few minutes and try again.';
             throw new Error(errorMsg);
           }
-        } catch (error) {
-          console.error('Error posting to Reddit:', error);
-          console.error('Error stack:', error.stack);
+          } catch (error) {
+            console.error('Error posting to Reddit:', error);
+            console.error('Error stack:', error.stack);
           
           // Create post record with error
           try {
@@ -226,15 +249,16 @@ export class DraftsService {
           }
 
           // Re-throw with more context
-          throw new HttpException(`Failed to post to Reddit: ${error.message || String(error)}`, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new HttpException(`Failed to post to Reddit: ${error.message || String(error)}`, HttpStatus.INTERNAL_SERVER_ERROR);
+          }
         }
-      }
 
-      return {
-        success: true,
-        draft,
-        post: postResult,
-      };
+        return {
+          success: true,
+          draft,
+          post: postResult,
+        };
+      });
     } catch (error) {
       console.error('Error in approveAndPost service:', error);
       throw error;

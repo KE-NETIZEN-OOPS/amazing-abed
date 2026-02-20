@@ -27,8 +27,47 @@ export interface RedditAdapter {
 }
 
 export class Crawl4aiRedditAdapter implements RedditAdapter {
+  private static readonly MAX_CONCURRENT_BROWSER_OPS = Math.max(
+    1,
+    Number.parseInt(process.env.REDDIT_BROWSER_CONCURRENCY || '2', 10) || 2,
+  );
+  private static activeBrowserOps = 0;
+  private static browserWaiters: Array<() => void> = [];
+
   private cookies: string | null = null;
   private loggedIn: boolean = false;
+
+  private async acquireBrowserSlot(): Promise<void> {
+    if (Crawl4aiRedditAdapter.activeBrowserOps < Crawl4aiRedditAdapter.MAX_CONCURRENT_BROWSER_OPS) {
+      Crawl4aiRedditAdapter.activeBrowserOps += 1;
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      Crawl4aiRedditAdapter.browserWaiters.push(resolve);
+    });
+    Crawl4aiRedditAdapter.activeBrowserOps += 1;
+  }
+
+  private releaseBrowserSlot(): void {
+    Crawl4aiRedditAdapter.activeBrowserOps = Math.max(0, Crawl4aiRedditAdapter.activeBrowserOps - 1);
+    const next = Crawl4aiRedditAdapter.browserWaiters.shift();
+    if (next) {
+      next();
+    }
+  }
+
+  private async withBrowserSlot<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    await this.acquireBrowserSlot();
+    try {
+      return await fn();
+    } finally {
+      this.releaseBrowserSlot();
+      console.log(
+        `🧭 Browser op completed (${operation}). Active: ${Crawl4aiRedditAdapter.activeBrowserOps}/${Crawl4aiRedditAdapter.MAX_CONCURRENT_BROWSER_OPS}`,
+      );
+    }
+  }
 
   setCookies(cookies: string): void {
     this.cookies = cookies;
@@ -41,67 +80,70 @@ export class Crawl4aiRedditAdapter implements RedditAdapter {
   }
 
   async verifyLoginStatus(): Promise<boolean> {
-    if (!this.cookies) {
-      return false;
-    }
-    
-    let browser: Browser | null = null;
-    try {
-      browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext({
-        viewport: { width: 1920, height: 1080 },
-      });
-      const page = await context.newPage();
-
-      await page.goto('https://www.reddit.com', { waitUntil: 'networkidle', timeout: 15000 });
-      
-      // Set cookies
-      const cookieStrings = this.cookies.split('; ');
-      const cookies = cookieStrings.map(c => {
-        const parts = c.split('=');
-        return {
-          name: parts[0].trim(),
-          value: parts.slice(1).join('=').trim(),
-          domain: '.reddit.com',
-          path: '/',
-        };
-      }).filter(c => c.name && c.value);
-      
-      if (cookies.length > 0) {
-        await context.addCookies(cookies);
+    return this.withBrowserSlot('verifyLoginStatus', async () => {
+      if (!this.cookies) {
+        return false;
       }
-      
-      await page.waitForTimeout(2000);
 
-      const isLoggedIn = await page.evaluate(() => {
-        const win = globalThis as any;
-        const doc = win.document;
-        return !!(
-          doc.querySelector('[data-testid="user-menu"]') ||
-          doc.querySelector('[aria-label*="user"]') ||
-          doc.querySelector('a[href*="/user/"]')
-        );
-      });
-      
-      await browser.close();
-      this.loggedIn = isLoggedIn;
-      return isLoggedIn;
-    } catch (error) {
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (e) {
-          // Ignore
+      let browser: Browser | null = null;
+      try {
+        browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({
+          viewport: { width: 1920, height: 1080 },
+        });
+        const page = await context.newPage();
+
+        await page.goto('https://www.reddit.com', { waitUntil: 'networkidle', timeout: 15000 });
+
+        // Set cookies
+        const cookieStrings = this.cookies.split('; ');
+        const cookies = cookieStrings.map(c => {
+          const parts = c.split('=');
+          return {
+            name: parts[0].trim(),
+            value: parts.slice(1).join('=').trim(),
+            domain: '.reddit.com',
+            path: '/',
+          };
+        }).filter(c => c.name && c.value);
+
+        if (cookies.length > 0) {
+          await context.addCookies(cookies);
         }
+
+        await page.waitForTimeout(2000);
+
+        const isLoggedIn = await page.evaluate(() => {
+          const win = globalThis as any;
+          const doc = win.document;
+          return !!(
+            doc.querySelector('[data-testid="user-menu"]') ||
+            doc.querySelector('[aria-label*="user"]') ||
+            doc.querySelector('a[href*="/user/"]')
+          );
+        });
+
+        await browser.close();
+        this.loggedIn = isLoggedIn;
+        return isLoggedIn;
+      } catch (error) {
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        this.loggedIn = false;
+        return false;
       }
-      this.loggedIn = false;
-      return false;
-    }
+    });
   }
 
   async login(username: string, password: string): Promise<boolean> {
-    let browser: Browser | null = null;
-    try {
+    return this.withBrowserSlot(`login:${username}`, async () => {
+      let browser: Browser | null = null;
+      try {
       console.log(`🔐 Logging in to Reddit as ${username}...`);
       browser = await chromium.launch({
         headless: false,
@@ -322,20 +364,21 @@ export class Crawl4aiRedditAdapter implements RedditAdapter {
         await page.waitForTimeout(10000);
       }
 
-      await browser.close();
-      return this.loggedIn;
-    } catch (error) {
-      console.error('Login error:', error);
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (e) {
-          // Ignore
+        await browser.close();
+        return this.loggedIn;
+      } catch (error) {
+        console.error('Login error:', error);
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (e) {
+            // Ignore
+          }
         }
+        this.loggedIn = false;
+        throw error;
       }
-      this.loggedIn = false;
-      throw error;
-    }
+    });
   }
 
   async scrapeLatestPosts(
@@ -407,8 +450,9 @@ export class Crawl4aiRedditAdapter implements RedditAdapter {
   }
 
   async postReply(postUrl: string, postId: string, reply: string): Promise<boolean> {
-    let browser: Browser | null = null;
-    try {
+    return this.withBrowserSlot(`postReply:${postId}`, async () => {
+      let browser: Browser | null = null;
+      try {
       console.log(`🚀 Starting postReply`);
       console.log(`📋 Post URL: ${postUrl}`);
       console.log(`📋 Post ID: ${postId}`);
@@ -849,20 +893,21 @@ export class Crawl4aiRedditAdapter implements RedditAdapter {
           return true;
         }
         
-        await browser.close();
+          await browser.close();
+          return false;
+        }
+      } catch (error) {
+        console.error('Post reply error:', error);
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
         return false;
       }
-    } catch (error) {
-      console.error('Post reply error:', error);
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (e) {
-          // Ignore
-        }
-      }
-      return false;
-    }
+    });
   }
 
   async getAccountInfo(): Promise<any> {

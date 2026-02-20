@@ -9,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 export class ScrapingService {
   private adapters: Map<string, Crawl4aiRedditAdapter> = new Map();
   private activeScrapes: Map<string, { interval: NodeJS.Timeout; startTime: number; postsFound: number }> = new Map();
+  private startingScrapes: Set<string> = new Set();
 
   constructor(
     private prisma: PrismaService,
@@ -18,6 +19,11 @@ export class ScrapingService {
   ) {}
 
   async startScraping(accountId: string) {
+    if (this.startingScrapes.has(accountId)) {
+      throw new Error('Scraping startup already in progress for this account');
+    }
+
+    this.startingScrapes.add(accountId);
     try {
       const account = await this.prisma.account.findUnique({
         where: { id: accountId },
@@ -62,7 +68,7 @@ export class ScrapingService {
         }
       }
 
-      // Start scraping cycle: 5 minutes scrape, 2 minutes break
+      // Start scraping cycle: 30 minutes scrape, 5 minutes break
       this.runScrapingCycle(accountId, adapter);
       
       // Update account status
@@ -73,6 +79,8 @@ export class ScrapingService {
     } catch (error: any) {
       console.error('Error starting scraping:', error);
       throw error;
+    } finally {
+      this.startingScrapes.delete(accountId);
     }
   }
 

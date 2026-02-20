@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AccountsService {
@@ -19,21 +20,25 @@ export class AccountsService {
     // Trim username to prevent duplicates with spaces
     const trimmedUsername = data.username.trim();
     
-    // Check if account already exists
-    const existing = await this.prisma.account.findUnique({
-      where: { username: trimmedUsername },
-    });
-    
-    if (existing) {
-      throw new Error(`Account with username "${trimmedUsername}" already exists`);
+    try {
+      return await this.prisma.account.create({
+        data: {
+          ...data,
+          username: trimmedUsername,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // Handle concurrent duplicate creates gracefully to avoid unstable client behavior.
+        const existing = await this.prisma.account.findUnique({
+          where: { username: trimmedUsername },
+        });
+        if (existing) {
+          throw new Error(`Account with username "${trimmedUsername}" already exists`);
+        }
+      }
+      throw error;
     }
-    
-    return this.prisma.account.create({
-      data: {
-        ...data,
-        username: trimmedUsername,
-      },
-    });
   }
 
   async update(id: string, data: any) {
