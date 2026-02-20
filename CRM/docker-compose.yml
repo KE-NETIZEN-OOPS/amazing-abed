@@ -76,7 +76,7 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: amazing-abed-web
     ports:
-      - "3000:3000"
+      - "13000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/amazing_abed
       - NEXT_PUBLIC_API_URL=http://localhost:13001
