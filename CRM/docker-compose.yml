@@ -8,8 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-amazing_abed}
-    ports:
-      - "5432:5432"
+    # Expose only on internal docker network to avoid host port conflicts.
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +20,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: amazing-abed-redis
-    ports:
-      - "6379:6379"
+    # Expose only on internal docker network to avoid host port conflicts.
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
