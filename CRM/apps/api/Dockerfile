@@ -1,7 +1,4 @@
-FROM node:18-alpine
-
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl libc6-compat
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
@@ -9,8 +6,6 @@ WORKDIR /app
 COPY package*.json ./
 COPY turbo.json ./
 COPY apps/api/package*.json ./apps/api/
-
-# Copy package files individually
 COPY packages/auth/package*.json ./packages/auth/
 COPY packages/reddit-adapter/package*.json ./packages/reddit-adapter/
 COPY packages/llm-adapter/package*.json ./packages/llm-adapter/
@@ -26,8 +21,23 @@ COPY . .
 WORKDIR /app/infra/prisma
 RUN npx prisma generate
 
+# Build shared packages required by API runtime.
+WORKDIR /app/packages/auth
+RUN npm run build
+
+WORKDIR /app/packages/reddit-adapter
+RUN npm run build
+
+WORKDIR /app/packages/llm-adapter
+RUN npm run build
+
+WORKDIR /app/packages/nlp
+RUN npm run build
+
+# Build API
+WORKDIR /app/apps/api
+RUN npm run build
+
 EXPOSE 3001
 
-# Run with tsx directly (no build needed)
-WORKDIR /app/apps/api
-CMD ["npx", "tsx", "src/main.ts"]
+CMD ["npm", "run", "start"]

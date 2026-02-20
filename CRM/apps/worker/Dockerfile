@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
@@ -22,6 +22,9 @@ WORKDIR /app/infra/prisma
 RUN npx prisma generate
 
 # Build shared internal packages required by the worker.
+WORKDIR /app/packages/reddit-adapter
+RUN npm run build
+
 WORKDIR /app/packages/nlp
 RUN npm run build
 
