@@ -46,9 +46,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./apps/api:/app/apps/api
-      - /app/node_modules
 
   worker:
     build:
@@ -66,9 +63,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./apps/worker:/app/apps/worker
-      - /app/node_modules
 
   web:
     build:
@@ -83,10 +77,6 @@ services:
       - NODE_ENV=production
     depends_on:
       - api
-    volumes:
-      - ./apps/web:/app/apps/web
-      - /app/node_modules
-      - /app/.next
 
 volumes:
   postgres_data:
