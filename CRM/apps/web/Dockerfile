@@ -21,11 +21,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/apps/web/.next ./.next
-COPY --from=builder /app/apps/web/node_modules ./node_modules
-COPY --from=builder /app/apps/web/package*.json ./
-COPY --from=builder /app/apps/web/next.config.js ./
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "apps/web/server.js"]
